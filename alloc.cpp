@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unistd.h> // for void *sbrk(intptr_t __delta) noexcept(true)
+#include <cassert>
 
 struct MemoryBlock
 {
@@ -58,12 +59,19 @@ uint64_t* allocate(size_t size)
     return block->data;
 }
 
-int main()
-{   
-    size_t a = 62631;
-    std::cout << align(a) << std::endl;
-    std::cout << alloc_size(a) << std::endl;
+void free(uint64_t *data)
+{
+    MemoryBlock* block = get_header(data);
 
+    block->isUsed = false;
+}
+// convert a pointer to a memory block's data section into a pointer to the memory block itself
+MemoryBlock* get_header(uint64_t *data) {
+    return (MemoryBlock *)((char *)data + sizeof(MemoryBlock::data) - sizeof(MemoryBlock));
+}
+
+int main() {
+    
 
     return 0;
 }
