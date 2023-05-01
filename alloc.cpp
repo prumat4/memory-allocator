@@ -5,16 +5,42 @@
 struct MemoryBlock
 {
     size_t size;
-    
     bool isUsed { false };
-    
     MemoryBlock *next;
-    
     uint64_t data[1];
 };
 
 static MemoryBlock *heapStart = nullptr;
 static MemoryBlock *head = heapStart;
+static MemoryBlock *searchStart = heapStart;
+
+enum class SearchMode
+{
+    FirstFit,
+    NextFit,
+};
+
+static auto  searchMode = SearchMode::FirstFit;
+
+void resetHeap() {
+    // Already reset.
+    if (heapStart == nullptr) {
+        return;
+    }
+    
+    // Roll back to the beginning.
+    brk(heapStart);
+    
+    heapStart = nullptr;
+    head = nullptr;
+    searchStart = nullptr;
+}
+
+void init(SearchMode mode)
+{
+    searchMode = mode;
+    resetHeap();
+}
 
 size_t align(size_t n)
 {   
@@ -70,8 +96,34 @@ MemoryBlock* first_fit_search(size_t size)
     return nullptr;
 }
 
+MemoryBlock* next_fit_search(size_t size)
+{
+    MemoryBlock *block = searchStart;
+
+    while(block != nullptr)
+    {   
+        if(block->isUsed || block->size < size)
+        {
+            block = block->next;
+            continue;
+        }
+
+        return block;
+    }
+
+    return nullptr;
+}
+
 MemoryBlock* find_block(size_t size)
 {
+    switch(searchMode)
+    {
+        case SearchMode::FirstFit:
+            return first_fit_search(size);
+        case SearchMode::NextFit:
+            return next_fit_search(size);
+    }
+
     return first_fit_search(size);
 }
 // allocates a block of size AT-LEAST size bytes
@@ -96,12 +148,13 @@ uint64_t* allocate(size_t size)
         head->next = block;
 
     head = block;
+    searchStart = block;
 
     return block->data;
 }
 
 int main() {
-        // --------------------------------------
+    // --------------------------------------
     // Test case 1: Alignment
     //
     // A request for 3 bytes is aligned to 8.
@@ -125,6 +178,35 @@ int main() {
     auto p3b = get_header(p3);
     assert(p3b->size == 8);
     assert(p3b == p2b);
+
+    // --------------------------------------
+    // Test case 5: Next search start position
+    //
+    
+    // [[8, 1], [8, 1], [8, 1]]
+    init(SearchMode::NextFit);
+
+    allocate(8);
+    allocate(8);
+    allocate(8);
+    
+    // [[8, 1], [8, 1], [8, 1], [16, 1], [16, 1]]
+    auto o1 = allocate(16);
+    auto o2 = allocate(16);
+    
+    // [[8, 1], [8, 1], [8, 1], [16, 0], [16, 0]]
+    free(o1);
+    free(o2);
+    
+    // [[8, 1], [8, 1], [8, 1], [16, 1], [16, 0]]
+    auto o3 = allocate(16);
+    
+    // Start position from o3:
+    assert(searchStart == get_header(o3));
+    
+    // [[8, 1], [8, 1], [8, 1], [16, 1], [16, 1]]
+    //                           ^ start here
+    allocate(16);
     
     puts("\nAll assertions passed!\n");
     return 0;
