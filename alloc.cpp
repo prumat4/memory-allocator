@@ -1,8 +1,17 @@
 #include <iostream>
+#include <list>
 #include <unistd.h>
 #include <cassert>  
 
 #define SIZE_T_MAX 65535
+
+enum class SearchMode
+{
+    FirstFit,
+    NextFit,
+    BestFit,
+    FreeList
+};
 
 struct MemoryBlock
 {
@@ -16,14 +25,9 @@ static MemoryBlock *heapStart = nullptr;
 static MemoryBlock *head = heapStart;
 static MemoryBlock *searchStart = heapStart;
 
-enum class SearchMode
-{
-    FirstFit,
-    NextFit,
-    BestFit
-};
-
 static auto searchMode = SearchMode::FirstFit;
+
+static std::list<MemoryBlock* > freeList;
 
 void resetHeap() {
     if (heapStart == nullptr) {
@@ -75,6 +79,9 @@ void free(uint64_t *data)
 {
     MemoryBlock* block = get_header(data);
     block->isUsed = false;
+
+    if(searchMode == SearchMode::FreeList)
+        freeList.push_back(block);
 }
 
 bool can_split(MemoryBlock *block, size_t size)
@@ -174,9 +181,21 @@ MemoryBlock* best_fit_search(size_t size)
         block = block->next;        
     }
 
-    list_allocate(block, size);
+    return list_allocate(block, size);
+}
 
-    return block;
+MemoryBlock* free_list_search(size_t size) 
+{
+    for (const auto &block : freeList) 
+    {
+        if (block->size < size) 
+            continue;
+    
+        freeList.remove(block);
+        return list_allocate(block, size);
+    }
+    
+    return nullptr;
 }
 
 MemoryBlock* find_block(size_t size)
@@ -189,6 +208,8 @@ MemoryBlock* find_block(size_t size)
             return next_fit_search(size);
         case SearchMode::BestFit:
             return best_fit_search(size);
+        case SearchMode::FreeList:
+            return free_list_search(size);
     }
 
     return first_fit_search(size);
