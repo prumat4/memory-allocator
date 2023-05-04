@@ -2,6 +2,8 @@
 #include <unistd.h> // for void *sbrk(intptr_t __delta) noexcept(true)
 #include <cassert>
 
+#define BYTE_SIZE 8
+
 struct MemoryBlock
 {
     size_t size;
@@ -117,29 +119,33 @@ MemoryBlock* next_fit_search(size_t size)
 
 bool can_split(MemoryBlock *block, size_t size)
 {
-    return block->size < size && !block->isUsed && block != nullptr;
+    return block->size > size;
 }
 
-// MemoryBlock* split(MemoryBlock* block, size_t size)
-// {
-//     if(!can_split(block, size))
-//         return nullptr;
+MemoryBlock* split(MemoryBlock* block, size_t size)
+{
+    MemoryBlock *newBlock = (MemoryBlock*)(char *)block + size;
+    newBlock->size = block->size - size;
+    newBlock->isUsed = false;
+    newBlock->next = block->next;
 
-//     MemoryBlock *newBlock = (MemoryBlock *)(char *)block + size + sizeof(MemoryBlock);
-//     auto temp = block->next;
-//     block->next = newBlock; 
-//     newBlock->next = temp;
+    block->size = size;
+    block->isUsed = true;
+    block->next = newBlock;
 
-//     newBlock->size = block->size - size;       
-//     block->size = size;
+    return block;
+}
 
-//     if(block->size > newBlock->size)
-//         return newBlock;
-//     else
-//         return block;
+MemoryBlock* list_allocate(MemoryBlock *block, size_t size)
+{
+    if(can_split(block, size))
+        block = split(block, size);
+    
+    block->isUsed = true;
+    block->size = size;
 
-//     return block;
-// }
+    return block;
+}
 
 MemoryBlock* best_fit_search(size_t size)
 {
@@ -172,8 +178,7 @@ MemoryBlock* best_fit_search(size_t size)
         block = block->next;        
     }
 
-    // block = split(block, size);
-
+    list_allocate(block, size);
 
     return block;
 }
