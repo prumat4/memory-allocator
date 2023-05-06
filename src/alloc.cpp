@@ -1,35 +1,14 @@
-#include <iostream>
-#include <list>
-#include <unistd.h>
-#include <cassert>  
-
-#define SIZE_T_MAX 65535
-
-enum class SearchMode
-{
-    FirstFit,
-    NextFit,
-    BestFit,
-    FreeList
-};
-
-struct MemoryBlock
-{
-    size_t size;
-    bool isUsed { false };
-    MemoryBlock *next;
-    uint64_t data[1];
-};
+#include "alloc.hpp"
 
 static MemoryBlock *heapStart = nullptr;
 static MemoryBlock *head = heapStart;
 static MemoryBlock *searchStart = heapStart;
 
-static auto searchMode = SearchMode::FirstFit;
+static SearchMode searchMode = SearchMode::FirstFit;
 
 static std::list<MemoryBlock* > freeList;
 
-void resetHeap() {
+void reset_heap() {
     if (heapStart == nullptr) {
         return;
     }
@@ -44,7 +23,7 @@ void resetHeap() {
 void init(SearchMode mode)
 {
     searchMode = mode;
-    resetHeap();
+    reset_heap();
 }
 
 size_t align(size_t n)
@@ -250,7 +229,6 @@ int main()
 
     std::cout << ptr << std::endl;
     std::cout << *ptr << std::endl;
-
 
     return 0;
 }
