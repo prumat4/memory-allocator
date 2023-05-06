@@ -1,14 +1,15 @@
 #include "alloc.hpp"
 
-static MemoryBlock *heapStart = nullptr;
-static MemoryBlock *head = heapStart;
-static MemoryBlock *searchStart = heapStart;
+MemoryBlock *heapStart = nullptr;
+MemoryBlock *head = heapStart;
+MemoryBlock *searchStart = heapStart;
 
-static SearchMode searchMode = SearchMode::FirstFit;
+SearchMode searchMode = SearchMode::FirstFit;
 
-static std::list<MemoryBlock* > freeList;
+std::list<MemoryBlock* > freeList;
 
-void reset_heap() {
+void reset_heap() 
+{
     if (heapStart == nullptr) {
         return;
     }
@@ -216,19 +217,4 @@ uint64_t* allocate(size_t size)
     searchStart = block;
 
     return block->data;
-}
-
-int main() 
-{
-    int *ptr = (int*)allocate(64);
-
-    std::cout << ptr << std::endl;
-    std::cout << *ptr << std::endl;
-
-    *ptr = 666;
-
-    std::cout << ptr << std::endl;
-    std::cout << *ptr << std::endl;
-
-    return 0;
 }
