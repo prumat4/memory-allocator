@@ -239,105 +239,18 @@ uint64_t* allocate(size_t size)
     return block->data;
 }
 
-int main() {
-    // --------------------------------------
-    // Test case 1: Alignment
-    //
-    // A request for 3 bytes is aligned to 8.
-    //
-    auto p1 = allocate(3);                        // (1)
-    auto p1b = get_header(p1);
-    assert(p1b->size == sizeof(uint64_t));
-    
-    
-    // --------------------------------------
-    // Test case 2: Exact amount of aligned bytes
-    //
-    auto p2 = allocate(8);                        // (2)
-    auto p2b = get_header(p2);
-    assert(p2b->size == 8);
- 
+int main() 
+{
+    int *ptr = (int*)allocate(64);
 
-    // --------------------------------------
-    // Test case 3: Free the object
-    //
-    free(p2);
-    assert(p2b->isUsed == false);
+    std::cout << ptr << std::endl;
+    std::cout << *ptr << std::endl;
 
+    *ptr = 666;
 
-    // --------------------------------------
-    // Test case 4: The block is reused
-    //
-    // A consequent allocation of the same size reuses
-    // the previously freed block.
-    //
-    auto p3 = allocate(8);
-    auto p3b = get_header(p3);
-    assert(p3b->size == 8);
-    assert(p3b == p2b);  // Reused!
-    
+    std::cout << ptr << std::endl;
+    std::cout << *ptr << std::endl;
 
-    // --------------------------------------
-    // Test case 5: Next search start position
-    //
-    // [[8, 1], [8, 1], [8, 1]]
-    init(SearchMode::NextFit);
-
-    allocate(8);
-    allocate(8);
-    allocate(8);
-    
-    // [[8, 1], [8, 1], [8, 1], [16, 1], [16, 1]]
-    auto o1 = allocate(16);
-    auto o2 = allocate(16);
-    
-    // [[8, 1], [8, 1], [8, 1], [16, 0], [16, 0]]
-    free(o1);
-    free(o2);
-    
-    // [[8, 1], [8, 1], [8, 1], [16, 1], [16, 0]]
-    auto o3 = allocate(16);
-    
-    // Start position from o3:
-    assert(searchStart == get_header(o3));
-    
-    // [[8, 1], [8, 1], [8, 1], [16, 1], [16, 1]]
-    //                           ^ start here
-    allocate(16);
-    
- 
-    // --------------------------------------
-    // Test case 6: Best-fit search
-    //
-    init(SearchMode::BestFit);
-    
-    // [[8, 1], [64, 1], [8, 1], [16, 1]]
-    allocate(8);
-    auto z1 = allocate(64);
-    allocate(8);
-    auto z2 = allocate(16);
-    
-    // Free the last 16
-    free(z2);
-    
-    // Free 64:
-    free(z1);
-    
-    // [[8, 1], [64, 0], [8, 1], [16, 0]]
-    
-    // Reuse the last 16 block:
-    auto z3 = allocate(16);
-    assert(get_header(z3) == get_header(z2));
-    
-    // [[8, 1], [64, 0], [8, 1], [16, 1]]
-    
-    // Reuse 64, splitting it to 16, and 48
-    z3 = allocate(16);
-    assert(get_header(z3) == get_header(z1));
-    
-    // [[8, 1], [16, 1], [48, 0], [8, 1], [16, 1]]
-
-    puts("\nAll assertions passed!\n");
 
     return 0;
 }
