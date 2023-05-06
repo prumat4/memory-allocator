@@ -60,3 +60,23 @@ searches the list for a block that is large enough to satisfy the request.
 ```cpp
 init(SearchMode::FreeList);
 ```
+
+## How to run
+> minimum required version of c++ is c++14
+
+
+### Run main
+```bash
+g++ -std=c++17 -c src/main.cpp
+g++ -std=c++17 -c src/alloc.cpp
+g++ -std=c++17 main.o alloc.o -o main
+./main
+```
+
+### Run tests
+```bash
+g++ -std=c++17 -c tests/tests.cpp
+g++ -std=c++17 -c src/alloc.cpp
+g++ -std=c++17 tests.o alloc.o -o test -lgtest -lgtest_main
+./tests
+```
